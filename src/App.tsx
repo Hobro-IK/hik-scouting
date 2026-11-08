@@ -119,7 +119,8 @@ export default function HobroScoutingApp() {
         }
       }
     });
-    return Object.values(grouped);
+    // Sortér efter karakteren på den nyeste rapport (højeste først)
+    return Object.values(grouped).sort((a, b) => (b.samlet_score || 0) - (a.samlet_score || 0));
   };
 
   // NYT: Hent alle versioner for en spiller ved navn – RETTET: .eq matcher eksakt navn
@@ -259,8 +260,9 @@ export default function HobroScoutingApp() {
     }
   };
 
+  // Filtrerer på spillerens nyeste rapport, så en gammel version aldrig bestemmer placering eller filter
   const getFiltreredeSpillere = () => {
-    return spillere.filter(s => {
+    return getGruppereteSpillere(spillere).filter(s => {
       const matchAargang = valgtAargang === 'Alle' || String(s.aargang) === valgtAargang;
       const matchKlub = valgtKlub === 'Alle' || s.klub === valgtKlub;
       const matchScore = valgteScores.length === 0 || valgteScores.includes(getScoreStyle(s.samlet_score).label);
@@ -781,7 +783,7 @@ export default function HobroScoutingApp() {
             </div>
 
             {/* NYT: Forsiden bruger getGruppereteSpillere – ét kort per spiller */}
-            {getGruppereteSpillere(getFiltreredeSpillere()).map(s => {
+            {getFiltreredeSpillere().map(s => {
                 const scoreStyle = getScoreStyle(s.samlet_score);
                 // NYT: Find antal versioner for denne spiller til badge
                 const antalVersioner = spillere.filter(sp => sp.navn.toLowerCase().trim() === s.navn.toLowerCase().trim()).length;
