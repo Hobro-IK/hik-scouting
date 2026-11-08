@@ -42,6 +42,7 @@ export default function HobroScoutingApp() {
   const [valgtKlub, setValgtKlub] = useState('Alle');
   const [valgteScores, setValgteScores] = useState([]); 
   const [searchQuery, setSearchQuery] = useState('');
+  const [visKlubForslag, setVisKlubForslag] = useState(false);
 
   // NYT: State til versionshåndtering
   const [aktivVersion, setAktivVersion] = useState(1);
@@ -621,7 +622,33 @@ export default function HobroScoutingApp() {
             <label style={labelStyle}>DATO</label>
             <input type="date" style={inputStyle} value={formData.dato} onChange={e => setFormData({...formData, dato: e.target.value})} />
             <input type="text" placeholder="Navn" style={inputStyle} value={formData.navn} onChange={e => setFormData({...formData, navn: e.target.value})} />
-            <input type="text" placeholder="Klub" style={inputStyle} value={formData.klub} onChange={e => setFormData({...formData, klub: e.target.value})} />
+            {/* Klubfelt med forslag fra klubber, der allerede er brugt – så samme klub ikke får flere navne */}
+            {(() => {
+              const tekst = (formData.klub || '').toLowerCase().trim();
+              const forslag = tekst
+                ? klubber.filter(k => k !== 'Alle' && k.toLowerCase().includes(tekst) && k.toLowerCase().trim() !== tekst).slice(0, 6)
+                : [];
+              return (
+                <div style={{position: 'relative', zIndex: 3}}>
+                  <input type="text" placeholder="Klub" autoComplete="off" style={inputStyle} value={formData.klub}
+                    onChange={e => { setFormData({...formData, klub: e.target.value}); setVisKlubForslag(true); }}
+                    onFocus={() => setVisKlubForslag(true)}
+                    onBlur={() => setTimeout(() => setVisKlubForslag(false), 150)} />
+                  {visKlubForslag && forslag.length > 0 && (
+                    <div style={{position: 'absolute', top: '44px', left: 0, right: 0, backgroundColor: 'white', border: '1px solid #ccc', borderRadius: '6px', boxShadow: '0 4px 10px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'hidden'}}>
+                      <div style={{fontSize: '11px', color: '#888', padding: '6px 12px', borderBottom: '1px solid #eee'}}>Findes allerede – tryk for at bruge:</div>
+                      {forslag.map(k => (
+                        <div key={k}
+                          onMouseDown={e => { e.preventDefault(); setFormData({...formData, klub: k}); setVisKlubForslag(false); }}
+                          style={{padding: '10px 12px', cursor: 'pointer', fontSize: '14px', color: '#0056a4', fontWeight: 'bold', borderBottom: '1px solid #f3f3f3'}}>
+                          {k}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <input type="text" placeholder="Niveau" style={inputStyle} value={formData.niveau} onChange={e => setFormData({...formData, niveau: e.target.value})} />
             <input type="text" placeholder="Født (DD-MM-ÅÅ)" style={inputStyle} value={formData.foedt} onChange={e => setFormData({...formData, foedt: e.target.value})} />
             <div style={{display: 'flex', gap: '10px', position: 'relative', zIndex: 2}}>
