@@ -125,18 +125,23 @@ export default function HobroScoutingApp() {
   };
 
   // NYT: Hent alle versioner for en spiller ved navn – RETTET: .eq matcher eksakt navn
+  // Tåler mellemrum før/efter navnet og forskel på store/små bogstaver (fx "Lorik " og "lorik")
   const hentVersionerForSpiller = async (navn) => {
+    const renNavn = (navn || '').trim();
+    const soegeTekst = renNavn.replace(/[\\%_]/g, c => '\\' + c);
     const { data } = await supabase
       .from('spillere')
       .select('*')
-      .eq('navn', navn.trim())
+      .ilike('navn', `%${soegeTekst}%`)
       .order('version', { ascending: true });
-    return data || [];
+    return (data || []).filter(r => (r.navn || '').toLowerCase().trim() === renNavn.toLowerCase());
   };
 
   // NYT: Åbn spiller – hent alle versioner og åbn nyeste
   const aabneSpiller = async (s) => {
-    const versioner = await hentVersionerForSpiller(s.navn);
+    let versioner = await hentVersionerForSpiller(s.navn);
+    // Sikkerhedsnet: findes intet ved opslaget, åbnes den spiller man trykkede på
+    if (versioner.length === 0) versioner = [s];
     setSpillerVersioner(versioner);
     const nyeste = versioner.reduce((prev, curr) => 
       (curr.version || 1) > (prev.version || 1) ? curr : prev, versioner[0]);
@@ -171,6 +176,8 @@ export default function HobroScoutingApp() {
     const { id: _fjernId, ...formUdenId } = formData;
     const dataTilGem = {
       ...formUdenId,
+      navn: (formData.navn || '').trim(),
+      klub: (formData.klub || '').trim(),
       version: nyVersionNummer,
       dato: new Date().toISOString().split('T')[0],
       samlet_score: parseFloat(samletScore.replace(',', '.')),
@@ -284,6 +291,8 @@ export default function HobroScoutingApp() {
     const rveTal = String(formData.rve).charAt(0); 
     const dataTilGem = { 
       ...formData, 
+      navn: (formData.navn || '').trim(),
+      klub: (formData.klub || '').trim(),
       samlet_score: parseFloat(samletScore.replace(',', '.')),
       rve: parseInt(rveTal),
       teknik: parseInt(formData.teknik),
